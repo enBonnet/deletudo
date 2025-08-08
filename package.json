@@ -1,0 +1,15 @@
+{
+  "name": "deletudo-extension",
+  "version": "1.0",
+  "description": "Gmail Delete Key Handler",
+  "main": "package-extension.js",
+  "scripts": {
+    "package": "node package-extension.js"
+  },
+  "keywords": ["chrome", "extension", "gmail"],
+  "author": "Ender Bonnet <enbonnet@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^7.0.1"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeleTudo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Handle delete key in Gmail inbox",
   "permissions": ["activeTab"],
   "content_scripts": [
@@ -21,7 +21,8 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "deletudo@example.com",
-      "strict_min_version": "109.0"
+      "strict_min_version": "109.0",
+      "data_collection_permissions": []
     }
   }
 }

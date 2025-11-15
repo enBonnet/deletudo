@@ -3,80 +3,58 @@ const path = require("node:path");
 const archiver = require("archiver");
 
 // --- Configuration ---
-const SRC_DIR = path.join(__dirname, "src"); // Source directory
-const MANIFEST_PATH = path.join(SRC_DIR, "manifest.json"); // Manifest path inside SRC_DIR
-const RELEASE_DIR = path.join(__dirname, "releases"); // Output directory for releases
+const SHARED_DIR = path.join(__dirname, "src", "shared");
+const CHROME_DIR = path.join(__dirname, "src", "chrome");
+const FIREFOX_DIR = path.join(__dirname, "src", "firefox");
+const RELEASE_DIR = path.join(__dirname, "releases");
 
-// --- Script Logic ---
-
-async function packageExtension() {
+async function packageExtension(browser, srcDir, manifestPath) {
   try {
-    // 1. Read manifest to get version
-    const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     const version = manifest.version;
-    console.log(`Packaging extension version: ${version}`);
+    console.log(`Packaging ${browser} extension version: ${version}`);
 
-    const versionedReleasePath = path.join(RELEASE_DIR, `v${version}`);
-    const outputZipPath = path.join(RELEASE_DIR, `deletudo-v${version}.zip`);
+    const versionedReleasePath = path.join(RELEASE_DIR, `${browser}-v${version}`);
+    const outputZipPath = path.join(RELEASE_DIR, `deletudo-${browser}-v${version}.zip`);
 
-    // 2. Create or clean release directory for this version
+    // Clean/create release directory
     if (fs.existsSync(versionedReleasePath)) {
-      console.warn(
-        `Warning: Directory ${versionedReleasePath} already exists. Deleting and recreating.`,
-      );
-      fs.rmSync(versionedReleasePath, { recursive: true, force: true }); // Force delete
+      fs.rmSync(versionedReleasePath, { recursive: true, force: true });
     }
     fs.mkdirSync(versionedReleasePath, { recursive: true });
-    console.log(`Created clean release directory: ${versionedReleasePath}`);
 
-    // 3. Copy the entire SRC_DIR contents to the versioned release path
-    //    fs.cpSync is available from Node.js v16.7.0+
-    fs.cpSync(SRC_DIR, versionedReleasePath, { recursive: true });
-    console.log(`Copied entire 'src' directory to: ${versionedReleasePath}`);
+    // Copy shared assets
+    fs.cpSync(SHARED_DIR, versionedReleasePath, { recursive: true });
+    // Copy browser-specific manifest (overwrites any shared manifest)
+    fs.cpSync(srcDir, versionedReleasePath, { recursive: true });
 
-    // 4. Create the ZIP file for Chrome Web Store upload
+    // Create ZIP
     const output = fs.createWriteStream(outputZipPath);
-    const archive = archiver("zip", {
-      zlib: { level: 9 }, // Sets the compression level.
-    });
+    const archive = archiver("zip", { zlib: { level: 9 } });
 
     output.on("close", () => {
-      console.log(
-        `\nSuccessfully created ZIP file: ${outputZipPath} (${(
-          archive.pointer() /
-          1024 /
-          1024
-        ).toFixed(2)} MB)`,
-      );
-      console.log(
-        `\nRelease assets are also available at: ${versionedReleasePath}`,
-      );
+      console.log(`\nSuccessfully created ${browser} ZIP: ${outputZipPath} (${(archive.pointer() / 1024 / 1024).toFixed(2)} MB)`);
+      console.log(`Release assets at: ${versionedReleasePath}`);
     });
 
     archive.on("warning", (err) => {
-      if (err.code === "ENOENT") {
-        console.warn("Archiver warning:", err.message);
-      } else {
-        throw err;
-      }
+      if (err.code === "ENOENT") console.warn("Archiver warning:", err.message);
+      else throw err;
     });
 
-    archive.on("error", (err) => {
-      throw err;
-    });
-
+    archive.on("error", (err) => {throw err});
     archive.pipe(output);
-
-    // Append files from the versioned release path to the archive
-    // This will put everything from inside versionedReleasePath directly at the root of the zip
     archive.directory(versionedReleasePath, false);
-
     await archive.finalize();
   } catch (error) {
-    console.error("Error packaging extension:", error);
-    process.exit(1); // Exit with an error code
+    console.error(`Error packaging ${browser} extension:`, error);
+    process.exit(1);
   }
 }
 
-// Execute the packaging function
-packageExtension();
+async function main() {
+  await packageExtension("chrome", CHROME_DIR, path.join(CHROME_DIR, "manifest.json"));
+  await packageExtension("firefox", FIREFOX_DIR, path.join(FIREFOX_DIR, "manifest.json"));
+}
+
+main();

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/assets/logo.png" alt="Deletudo Logo" width="120"/>
+  <img src="src/shared/assets/logo.png" alt="Deletudo Logo" width="120"/>
 </p>
 
 # Deletudo
@@ -21,6 +21,9 @@ Deletudo works best when you use a vertical or horizontal split. Why? Because it
 
 ## Questions? Suggestions? 
 Open an issue or send us a meme. We love both.
+
+## Scripts
+Run `pnpm package` to build Chrome and Firefox packages.
 
 ---
 
